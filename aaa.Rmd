@@ -375,13 +375,20 @@ Dadosn <- as.data.frame(taylor)
 Dadosn$data <- seq(as.Date("2003-01-01"), by = "month", length.out = nrow(Dadosn))
 str(Dadosn)
 dif_dadoslog <- Dadosn
+library(readxl)
+sentimentos_final <- read_excel("C:/Users/rodri/Downloads/sentimentos_final.xlsx")
+sentimentos_final <- sentimentos_final %>%
+  rename(data = DataReferencia)
+sentimentos_final$data <- as.Date(
+  paste0(sentimentos_final$data, "-01"),
+  format = "%Y-%m-%d"
+)
+
 dif_dadoslog <- left_join(Dadosn, sentimentos_final, by = "data")
 dif_dadoslog <- dif_dadoslog %>%
   select(selic, desvio, hiato, cambio, pontuacao_total_sentimento, data, Titulo)
 
-# Exclua a coluna "MesAno"
-dif_dadoslog <- dif_dadoslog %>%
-  select(-MesAno)
+drop_na(dif_dadoslog)
 
 min_values <- apply(dif_dadoslog[,1:4], 2, min)
 
@@ -502,12 +509,11 @@ library(vars)
 Calculano com os dados brutos
 
 ```{r}
-dif_dados <- dif_dados %>%
-  select(-data, -Titulo, -MesAno)
+dif_dados <- subset(dif_dados, select = -c(data, Titulo, MesAno))
 Dadosn <- left_join(Dadosn, sentimentos_final, by = "data")
-Dadosn <- Dadosn %>%
-  select(-data, -Titulo, -MesAno)
+Dadosn <- subset(Dadosn, select = -c(data, Titulo, MesAno))
 dev.new(width = 800, height = 600)
+Dadosn <- na.omit(Dadosn)
 
 VARselect(Dadosn, lag.max =12)
 {
