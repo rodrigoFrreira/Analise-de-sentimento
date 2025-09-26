@@ -1,0 +1,255 @@
+---
+title: "Indice"
+output: html_document
+date: "2024-04-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### TALVEZ QUEM SABE \> vector space mode
+
+<https://revistas.ufrj.br/index.php/scg/article/download/13395/9217>\
+Maria Daniella de Oliveira Pereira da Silva
+
+```{r}
+## chamadas e scraping
+install.packages("jsonlite")
+install.packages("RCurl")
+install.packages("rvest")
+## extração e manipulação
+install.packages("tidyverse")
+install.packages("pdftools")
+install.packages("glue")
+install.packages("stopwords")
+install.packages("textdata")
+if (!requireNamespace("jsonlite", quietly = TRUE)) {
+  install.packages("jsonlite")
+}
+if (!requireNamespace("curl", quietly = TRUE)) {
+  install.packages("curl")
+}
+if (!requireNamespace("magrittr", quietly = TRUE)) {
+  install.packages("magrittr")
+}
+if (!requireNamespace("dplyr", quietly = TRUE)) {
+  install.packages("dplyr")
+}
+if (!requireNamespace("stringr", quietly = TRUE)) {
+  install.packages("stringr")
+}
+if (!requireNamespace("purrr", quietly = TRUE)) {
+  install.packages("purrr")
+}
+if (!requireNamespace("pdftools", quietly = TRUE)) {
+  install.packages("pdftools")
+}
+if (!requireNamespace("tidyr", quietly = TRUE)) {
+  install.packages("tidyr")
+}
+if (!requireNamespace("tm", quietly = TRUE)) {
+  install.packages("tm")
+}
+if (!requireNamespace("tidytext", quietly = TRUE)) {
+  install.packages("tidytext")
+}
+```
+
+```{r}
+# Função para extrair texto de PDFs
+extract_pdf_text <- function(url) {
+  # Tente extrair o texto do PDF, se houver erro, retorne NA
+  tryCatch(
+    {
+      # Extrair texto do PDF
+      text <- pdf_text(url)
+      # Retornar o texto concatenado
+      paste(text, collapse = "\n")
+    },
+    error = function(e) {
+      # Em caso de erro, retornar NA
+      NA
+    }
+  )
+}
+termos_rm <- c(
+  "th",
+  "minutes of the meeting", "monetary policy committee", "copom",
+  "bcb.gov.br", "bcb",
+  "headquarters", "meeting rooms", "floor",
+  "brasilia", "brasília", "de", "brazil", "department",
+  "ranking", "operations", "deputy", "governor",
+  "committee", "banco central do brasil", "banco central brasil",
+  "meeting", "office", "minutes", "rd", "st", "nd",
+  "central bank", "pp", "govbr", "bcbgovbr",
+  "date",
+"morn",
+"afternoon",
+"start",
+"end",
+"pm",
+"time",
+"attend",
+"present",
+"head",
+  month.name, month.abb
+)
+
+
+```
+
+### a
+
+```{r}
+#analise
+library(textdata)
+## chamadas e scraping
+library(jsonlite)
+library(RCurl)
+library(rvest)
+## extração e manipulação
+library(tidyverse)
+library(pdftools)
+library(glue)
+library(stopwords)
+library(jsonlite)
+library(curl)
+library(magrittr)
+library(dplyr)
+library(stringr)
+library(purrr)
+library(pdftools)
+library(tidyr)
+library(tm)
+library(tidytext)
+```
+
+```{r}
+## url base para todas as chamadas
+url <- "https://www.bcb.gov.br/api/servico/sitebcb/copomminutes/ultimas?quantidade=1000&filtro="
+#api_antigas <- "/api/servico/sitebcb/atascopom-conteudo/ultimas?quantidade=1000&filtro="
+#api_novas <- "/api/servico/sitebcb/atascopom/ultimas?quantidade=1000&filtro="
+#json_links_novos <- getURL(glue("{url}{api_novas}"))
+url2 = "https://www.bcb.gov.br"
+df_atasx<- fromJSON(url, flatten = TRUE) %>%
+  .$conteudo %>%
+  select(DataReferencia, Titulo, LinkPagina = Url) %>%
+  mutate(Tipo = "pdf")
+
+
+df_atas <- df_atasx %>%
+  mutate(LinkPagina = paste0("https://www.bcb.gov.br", LinkPagina))
+
+
+# Aplicar a função extract_pdf_text aos links na coluna LinkPagina
+df_atas <- df_atas %>%
+  mutate(TextoPDF = map_chr(LinkPagina, extract_pdf_text))
+df_atas <- df_atas %>%
+  slice(1:182)
+```
+
+```{r}
+df_atas <- df_atas %>%
+  mutate(TextoPDF = tolower(TextoPDF))
+atas_token <- df_atas %>%
+  dplyr::mutate(
+    TextoPDF = stringr::str_to_lower(TextoPDF) %>%
+      # Remover "stop words" em inglês e português
+      tm::removeWords(words = c(tm::stopwords(kind = "english"), tm::stopwords(kind = "portuguese"))) %>%
+      # Remover pontuações e números
+      tm::removePunctuation() %>%
+      tm::removeNumbers() %>%
+      # Remover termos "indesejados"
+      tm::removeWords (words=stringr::str_to_lower(termos_rm)) %>%
+      stringr::str_replace_all(pattern = "\\n|\\r|\\-|\\'\\'", replacement = "") %>%
+      # Aplicar stemming (reduzir palavras à sua raiz)
+      tm::stemDocument(language = "english")
+  ) %>%
+  # Criar tokens por palavra
+  tidytext::unnest_tokens(output = "token", input = "TextoPDF", token = "words")
+
+
+```
+```{r}
+# Carregar o lexicon Loughran-McDonald
+lexicon <- lexicon_loughran()
+lexicon$word <- tm::stemDocument(lexicon$word, language = "english")
+# Tokens de palavras
+tokens <- atas_token$token
+
+# Filtrar tokens que estão no lexicon
+tokens_in_lexicon <- tokens[tokens %in% lexicon$word]
+
+# Obter os sentimentos para os tokens do lexicon
+sentimentos <- lexicon[lexicon$word %in% tokens_in_lexicon, ]
+sentimentos_com_contexto <- merge(sentimentos, atas_token, by.x = "word", by.y = "token", all.x = TRUE)
+# Verificar os sentimentos atribuídos aos tokens
+head(sentimentos)
+```
+
+```{r}
+library(dplyr)
+
+# Criar uma nova coluna de pontuação de sentimento com base nas métricas
+sentimentos_com_contexto <- sentimentos_com_contexto %>%
+  mutate(pontuacao_sentimento = case_when(
+    sentiment == "negative" ~ -1,
+    sentiment == "positive" ~ 1.5,
+    sentiment == "uncertainty" ~ -0.8,
+    sentiment == "constraining" ~ -0.5,
+    TRUE ~ 0  # Se não for nenhum dos sentimentos especificados, atribui 0
+  ))
+
+# Agregar por DataReferencia e Titulo e calcular a pontuação total de sentimento
+sentimentos_agrupados <- sentimentos_com_contexto %>%
+  group_by(DataReferencia, Titulo) %>%
+  summarise(pontuacao_total_sentimento = sum(pontuacao_sentimento))
+
+# Verificar o resultado
+head(sentimentos_agrupados)
+
+```
+```{r}
+#arrumando por ano e preenchendo as datas faltando 
+sentimentos_agrupados <- sentimentos_agrupados %>%
+  mutate(DataReferencia = substr(DataReferencia, 1, 7)) %>%
+  arrange(DataReferencia)
+# Adicionar uma coluna para o mês e ano separados
+todas_datas <- seq(as.Date("2003-02-01"), as.Date("2024-05-01"), by = "month")
+todas_datas_formatadas <- format(todas_datas, "%Y-%m")
+
+# Criar o tibble com todas as datas formatadas
+todas_datas_tibble <- tibble(DataReferencia = todas_datas_formatadas)
+
+# Comparar e adicionar linhas para as datas ausentes em sentimentos_agrupados
+sentimentos_completos <- todas_datas_tibble %>%
+  anti_join(sentimentos_agrupados, by = "DataReferencia") %>%
+  mutate(
+    Titulo = "Copom minutes fake",
+    pontuacao_total_sentimento = NA_real_,
+    MesAno = substr(DataReferencia, 1, 7)
+  )
+
+# Combinar sentimentos_agrupados e sentimentos_completos
+sentimentos_final <- bind_rows(sentimentos_agrupados, sentimentos_completos) %>%
+  arrange(MesAno)  # Ordenar por MesAno
+
+# Verificar o resultado
+head(sentimentos_final)
+
+for (i in 1:nrow(sentimentos_final)) {
+  if (is.na(sentimentos_final$pontuacao_total_sentimento[i])) {
+    if (i == 1) {
+      sentimentos_final$pontuacao_total_sentimento[i] <- sentimentos_final$pontuacao_total_sentimento[i + 1]
+    } else if (i == nrow(sentimentos_final)) {
+      sentimentos_final$pontuacao_total_sentimento[i] <- sentimentos_final$pontuacao_total_sentimento[i - 1]
+    } else {
+      sentimentos_final$pontuacao_total_sentimento[i] <-
+        (sentimentos_final$pontuacao_total_sentimento[i - 1] +
+         sentimentos_final$pontuacao_total_sentimento[i + 1]) / 2
+    }
+  }
+}
+```
+
