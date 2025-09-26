@@ -1,0 +1,572 @@
+---
+title: "Regra e taylor"
+output: html_document
+date: "2024-03-05"
+author: "Rodrigo Ferreira Costa Pinto"
+---
+
+## Introducao
+
+Knight (2006) fez uma distinção entre risco e incerteza. O risco é algo que pode ser calculado porque se baseia na probabilidade conhecida de um evento acontecer, permitindo que os produtores o considerem ao calcular a melhor forma de maximizar seus lucros. A incerteza é o desconhecimento do que vai acontecer no futuro (Knight, 2006).
+
+Nos modelos tradicionais, diante dessa imprevisibilidade, criam-se naturalmente certos cenários mais conservadores na economia (Bernanke, 1983), impactando negativamente os investimentos, pois nesse clima de incerteza os consumidores optam por postergar suas decisões até que se possa mensurar mais precisamente o resultado das suas escolhas.
+
+A incerteza na economia vai ser medida pelo índice de incerteza econômico-política (EPU) desenvolvido por **Baker, Davis e Bloom** (2016). Esse índice conta quantas vezes palavras relacionadas à incerteza econômica ou política aparecem em jornais populares. A ideia principal por trás desse índice é que os agentes econômicos usam as notícias desses jornais para ter uma noção de quão incerta está a economia.\
+O sentimento está intimamente ligado à escolha das palavras usadas na escrita. Ao selecionar um conjunto específico de palavras para análise, é possível determinar o tom do texto. A tonalidade resultante, combinada com o peso atribuído a cada palavra, permite obter um parâmetro que expressa o sentimento desejado.
+
+Fazendo uma análise do sentimento das atas do Comitê de Política Monetária (COPOM), é possível captar as nuances do discurso dos membros do comitê em relação às perspectivas econômicas, às incertezas políticas e aos possíveis impactos nas decisões de política monetária. Através dessa análise textual, é viável identificar os momentos de maior cautela ou otimismo por parte dos dirigentes, assim como compreender como as informações econômicas e políticas influenciam suas percepções e abordagens. Essa investigação contribui para uma compreensão mais aprofundada dos fatores que moldam as decisões do COPOM e sua orientação em relação à política monetária.
+
+## Objetivo
+
+O objetivo é averiguar o efeito do principal veículo de comunicação do Banco Central do Brasil, as atas das reuniões do Comitê de Política Monetária (COPOM), sobre o mercado de juros futuros no período de 2003 a 2023.
+
+## Metodologia
+
+Os dados usados nesse trabalho foram coletados no site do BCB timed series e foram transformado em log usando logaritmo natural.
+
+### Deflacionar
+
+A serie foi deflacionada usando essa formula:
+
+\\[ S\_{\\text{deflacionada}} = \\frac{S\_{\\text{nominal}}}{\\text{Índice de Deflator}} \\]
+
+Onde:
+
+-   [-]{.underline} \\( S\_{\\text{deflacionada}} \\) é a série deflacionada (ajustada para remover o efeito da inflação).
+
+-   \- \\( S\_{\\text{nominal}} \\) é a série nominal (sem ajuste para inflação).
+
+-   [-]{.underline} \\( \\text{Índice de Deflator} \\) é o índice que representa a variação dos preços ao longo do tempo.
+
+### Hiato
+
+Para calcular o hiato foi usado o Hodrick-Prescottn hp filter\
+\\[ \\text{Minimizar } \\sum\_{t=1}\^{T} \\left[ (y_t - \\bar{y}\_t)\^2 + \\lambda(\\Delta\^2 y_t)\^2 \\right] \\]
+
+Onde:
+
+-   [-]{.underline} \\( y_t \\) é o valor observado da série temporal no tempo \\( t \\).
+
+-   \- \\( \\bar{y}\_t \\) é a tendência de longo prazo (componente de tendência) no tempo \\( t \\).
+
+-   [-]{.underline} \\( \\Delta\^2 y_t \\) é a variação quadrática da série temporal no tempo \\( t \\).
+
+-   \- \\( \\lambda \\) é o parâmetro de suavização, que controla o grau de suavização do componente cíclico em relação ao componente de tendência. Quanto maior o valor de \\( \\lambda \\), mais suavizado será o componente cíclico.
+
+    O objetivo do filtro HP é encontrar a tendência de longo prazo (\\( \\bar{y}\_t \\)) que minimize a soma ponderada dos desvios quadráticos entre os valores observados da série temporal e a tendência, juntamente com a variação quadrática da série temporal. Isso ajuda a separar o componente cíclico (variações de curto prazo) do componente de tendência (variação de longo prazo) da série temporal.
+
+### Testes
+
+#### Heterocedasticidade
+
+Heterocedasticidade refere-se à situação em que a variância dos erros de um modelo estatístico não é constante ao longo do tempo ou em diferentes níveis das variáveis independentes.
+
+-   Goldfeld-Quandt.
+
+-   Breusch-Pagan.
+
+-   O teste de White
+
+#### Autocorrelação
+
+Autocorrelação é quando existe uma relacao entre os erros em uma observacao e os erros em observacoes anteriores.
+
+-   Durbin-Watson
+
+-   Teste ARCH
+
+-   Box-Pierce
+
+#### Multicolinearidade
+
+multicolinearidade existe quando duas ou mais variaveis independentes sao altamente correlacionadas, tornando dificil isolar seus efeitos individuais na variavel dependente
+
+-   BOX
+
+#### **WEB SCRAPING E PRÉ-PROCESSAMENTO**
+
+A coleta de dados textuais para análise de sentimento é um passo fundamental no processo de pesquisa. Para isso, foi empregada a técnica de Web Scraping, que consiste na extração automatizada de informações de páginas da web para análise posterior.No contexto desta pesquisa, o Web Scraping foi utilizado para coletar das atas do copom , que são disponibilizadas pelo Banco Central do Brasil em seu site.Essa técnica permitiu a obtenção das informações necessárias para análise de sentimento nas atas do COPOM, que são importantes documentos que registram as discussões e decisões relacionadas à política monetária no Brasil.
+
+```         
+```
+
+#### **TOKENIZAÇÃO**
+
+Após a coleta dos textos é feito o processamento dele para ser feito sua análise, Primeiro se faz a tokenização do texto  é o processo de dividir o texto em unidades individuais de palavras. 
+
+Então é feito técnicas para facilitar a análise primeiro removendo stop words usando a biblioteca do NTK, posteriormente é feito o stemming para reduzir as palavras às suas formas básicas, removendo sufixos e prefixos. O objetivo é agrupar palavras relacionadas sob sua forma raiz, o que pode ajudar a melhorar a precisão e eficiência de análises.
+
+#### **DICIONÁRIO DE SENTIMENTO**
+
+Em seguida a ter os dados processados é necessário se ter um dicionário de sentimento, estes dicionários classificam um grande conjunto de palavras comumente usadas em documentos em categorias como "positiva", "negativa", etc. o dicionário usado para esse trabalho vai ser Loughran e Mcdonald (2011) (L&M) o qual foi criado especificamente para o ambiente econômico-financeiro. Então é comparado os tokens das palavras com o dicionário para ter o sentimento de cada palavra.
+
+#### **Criacao da pontuacao do sentimento**
+
+\
+O dicionário Loughran-McDonald classifica as palavras em seis categorias de sentimento importantes em contextos financeiros:
+
+1.  **Negative**: Palavras que denotam uma conotação negativa ou pessimista.
+
+2.  **Positive**: Palavras que denotam uma conotação positiva ou otimista.
+
+3.  **Litigious**: Palavras relacionadas a litígios, disputas legais ou atividades judiciais.
+
+4.  **Uncertainty**: Palavras que indicam incerteza, dúvida ou falta de clareza.
+
+5.  **Constraining**: Palavras que denotam restrição, limitação ou impedimento.
+
+6.  **Superfluous**: Palavras que são consideradas desnecessárias, excessivas ou redundantes.
+
+    Para pontuar cada sentimento foi usado essa metrica
+
+    ```         
+    sentiment == "negative" ~ -1,
+    sentiment == "positive" ~ 1.5,
+    sentiment == "uncertainty" ~ -0.8,
+    sentiment == "constraining" ~ -0.5,
+    ```
+
+    Entao foi obtido um numero que é a pontuacao d sentimento.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r eval=FALSE, include=FALSE}
+#Se precisar instalar os pacotes
+install.packages("tidyverse")
+install.packages("mFilter")
+install.packages("lmtest")
+install.packages("fBasics")
+install.packages("tseries")
+install.packages("googlesheets4")
+install.packages("googledrive")
+
+```
+
+```{r include=FALSE}
+#Librarys
+library(googledrive)
+library(fBasics)
+library(tidyverse)
+library(mFilter)
+library(lmtest)
+library(whitestrap)
+library(FinTS)
+library(tseries)
+library(googlesheets4)
+library(dynlm)
+
+```
+
+```{r include=FALSE}
+transformar_dataframe <- function(data_frame) {
+  # Remover a primeira e a última coluna
+  data_frame <- data_frame[, -c(1, ncol(data_frame))]
+  
+  # Transpor o dataframe
+  data_frame <- as.data.frame(t(data_frame))
+  
+  # Selecionar as duas últimas linhas
+  ultimas_linhas <- t(tail(data_frame, 2))
+  
+  # Adicionar as duas últimas linhas de volta ao dataframe
+  data_frame <- cbind(data_frame, ultimas_linhas)
+  
+  # Remover as duas últimas linhas
+  data_frame <- head(data_frame, -2)
+  
+  # Retornar o dataframe transformado
+  return(data_frame)
+}
+regressao_personalizada_dynlm <- function(dados, dependent_var, independent_vars, start_date, end_date) {
+  # Filtrando os dados pelo intervalo de datas desejado
+  dados_filtrados <- dados[dados$data >= start_date & dados$data <= end_date, ]
+  # Criando a fórmula para a regressão
+  formula <- as.formula(paste(dependent_var, "~", paste(independent_vars, collapse = " + ")))
+  
+  # Realizando a regressão dinâmica
+  model_dynlm <- dynlm(formula, data = dados_filtrados)
+  
+  # Retornando o modelo
+  return(model_dynlm)
+}
+regressao_personalizada <- function(dados, dependent_var, independent_vars, start_date, end_date) {
+  # Filtrando os dados pelo intervalo de datas desejado
+  dados_filtrados <- dados[dados$data >= start_date & dados$data <= end_date, ]
+  # Criando a fórmula para a regressão
+  formula <- as.formula(paste(dependent_var, "~", paste(independent_vars, collapse = " + ")))
+  
+  # Realizando a regressão linear
+  model <- lm(formula, data = dados_filtrados)
+  #rodrigo Retornando o modelo
+  return(model)
+}
+analisar_modelo <- function(modelo) {
+  residuos <- residuals(modelo)
+##Rodrigo
+  # Plot dos resíduos
+  plot(residuos, type="l", col="red")
+  abline(h=0, col="blue", lw=3)
+  
+  # Histograma dos resíduos
+  hist(residuos, main="", col="cadetblue", prob=T, xlab = names(residuos)[1], breaks = 30)
+  curve(expr=dnorm(x,mean=mean(residuos),sd=sd(residuos)),col="red",add= TRUE, lwd=2)
+  
+  # Teste de Jarque-Bera
+  jarquebera <- jarqueberaTest(residuos)
+  #print(jarquebera)
+  
+  # QQ plot dos resíduos
+  qqnorm(residuos, col="blue")
+  qqline(residuos, col="red")
+  
+  # Teste de Shapiro-Wilk
+  shapiro <- shapiro.test(residuos)
+  #print(shapiro)
+  
+  # Teste de heterocedasticidade
+  coeftest_result <- coeftest(modelo)
+  #print(coeftest_result)
+  n <- length(residuos)
+  
+  # Teste de heterocedasticidade
+  gqtest_result <- gqtest(modelo, fraction = n * 0.15, alternative = "greater")
+  #print(gqtest_result)
+  
+  # Teste de Breusch-Pagan
+  bptest_result <- bptest(modelo)
+  #print(bptest_result)
+  
+  # Teste de White
+  white_test_result <- white_test(modelo)
+  #print(white_test_result)
+  
+  # Teste de Durbin-Watson
+  dwtest_result <- dwtest(modelo)
+  #print(dwtest_result)
+  
+  # Teste de Autocorrelação
+  ArchTest_result <- ArchTest(residuos, lags = 2)
+  #print(ArchTest_result)
+  
+  # Teste de Box-Pierce
+  Box.test_result <- Box.test(residuos, lag=12, type="Box-Pierce")
+  #print(Box.test_result)
+  # Teste de Dickey-Fuller
+  df_test <- adf.test(residuos)
+  #print(df_test)
+  ##Rodrigo
+  # Retorna o modelo e os resultados dos testes
+  return(list(modelo = modelo, residuos = residuos, jarque_bera = jarquebera, shapiro = shapiro, coeftest = coeftest_result, gqtest = gqtest_result, bptest = bptest_result, white_test = white_test_result, dwtest = dwtest_result, ArchTest = ArchTest_result, Box.test = Box.test_result, adf=df_test))
+}
+renderRegModel <- function(start_date, end_date) {
+  # Chama a função regressao_personalizada com as datas fornecidas pelo usuário
+  resultado <- regressao_personalizada(Dadosn, dependent_var, independent_vars, start_date, end_date)
+  
+  # Retorna o resumo do modelo
+  return(summary(resultado))
+}
+extract_statistics <- function(lista) {
+  gqtest_statistic_GQ <- lista[["gqtest"]][["statistic"]][["GQ"]]
+  gqtest_p_value <- lista[["gqtest"]][["p.value"]]
+  bptest_statistic_BP <- lista[["bptest"]][["statistic"]][["BP"]]
+  bptest_p_value <- lista[["bptest"]][["p.value"]]
+  white_test_w_stat <- lista[["white_test"]][["w_stat"]]
+  white_test_p_value <- lista[["white_test"]][["p_value"]]
+  dwtest_statistic_DW <- lista[["dwtest"]][["statistic"]][["DW"]]
+  dwtest_p_value <- lista[["dwtest"]][["p.value"]]
+  ArchTest_statistic_Chi_squared <- lista[["ArchTest"]][["statistic"]][["Chi-squared"]]
+  ArchTest_p_value_Chi_squared <- lista[["ArchTest"]][["p.value"]][["Chi-squared"]]
+  jaque_bera_statistic <- lista[["jarque_bera"]]@test[["statistic"]]
+  jaque_bera_p_value <- lista[["jarque_bera"]]@test[["p.value"]]
+  shapiro_statistic <- lista[["shapiro"]][["statistic"]]
+  shapiro_p_value <- lista[["shapiro"]][["p.value"]]
+  Box_test_statistic_X_squared <- lista[["Box.test"]][["statistic"]][["X-squared"]]
+  adf_statistic_Dickey_Fuller <- lista[["adf"]][["statistic"]][["Dickey-Fuller"]]
+  adf_p_value <- lista[["adf"]][["p.value"]]
+  
+  # Criar um dataframe
+  df <- data.frame(
+    gqtest_statistic = gqtest_statistic_GQ,
+    gqtest_p_value = gqtest_p_value,
+    bptest_statistic_BP = bptest_statistic_BP,
+    bptest_p_value = bptest_p_value,
+    white_test_w_stat = white_test_w_stat,
+    white_test_p_value = white_test_p_value,
+    dwtest_statistic_DW = dwtest_statistic_DW,
+    dwtest_p_value = dwtest_p_value,
+    ArchTest_statistic_Chi_squared = ArchTest_statistic_Chi_squared,
+    ArchTest_p_value_Chi_squared = ArchTest_p_value_Chi_squared,
+    jaque_bera_statistic = jaque_bera_statistic,
+    jaque_bera_p_value = jaque_bera_p_value,
+    shapiro_statistic = shapiro_statistic,
+    shapiro_p_value = shapiro_p_value,
+    Box_test_statistic_X_squared = Box_test_statistic_X_squared,
+    adf_statistic_Dickey_Fuller = adf_statistic_Dickey_Fuller,
+    adf_p_value = adf_p_value
+  )
+  
+  return(df)
+}
+extrair_resultados_regressao <- function(modelo) {
+  # Extrair os coeficientes, valores-p, R-quadrado e estatística F
+  coeficientes <- coef(summary(modelo))
+  r_squared <- summary(modelo)$r.squared
+  f_statistic <- summary(modelo)$fstatistic
+  
+  # Criar um data frame com as informações
+  resultados <- data.frame(
+    Coeficiente = rownames(coeficientes),
+    Valor = coeficientes[, 1],
+    Pr_t = coeficientes[, 4],
+    R_quadrado = r_squared,
+    F_statistic = f_statistic[1],
+    p_valor_F = f_statistic[2]
+  )
+  
+  return(resultados)
+}
+```
+
+```{r include=FALSE}
+#Lendos os dados
+Selic=read.table("selic12.txt",head=T); Selic
+PibR=read.table("pibR.txt",head=T); PibR
+eipca=read.table("eipca.txt",head=T); eipca
+meta=read.table("meta.txt",head=T); meta
+ipca=read.table("ipca.txt", head=T); ipca
+cambio=read.table("cambio.txt", head=T);cambio
+```
+
+```{r include=FALSE}
+#Arrumando os dados
+selic<-ts(Selic,frequency=12,start=c(2003,1), end=c(2023,12));selic;plot(selic)
+pib<-ts(PibR,frequency=12,start=c(2003,1), end=c(2023,12));pib;plot(pib)
+eipca<-ts(eipca,frequency=12,start=c(2003,1), end=c(2023,12));eipca;plot(eipca)
+meta<-ts(meta,frequency=12,start=c(2003,1), end=c(2023,12));meta;plot(meta)
+ipca<-ts(ipca,frequency=12,start=c(2003,1), end=c(2023,12));ipca;plot(ipca)
+cambio<-ts(cambio, frequency=12, start=c(2003,1), end=c(2023,12));cambio;plot(cambio)
+dados = cbind(selic, pib, eipca, meta , cambio)
+plot(dados)
+```
+
+```{r include=FALSE}
+#Calculando os hiatos e o desvio
+Pib.hp<-hpfilter(na.omit(pib, type='lambda', freq=14400))
+hiato<-Pib.hp$cycle; hiato
+hiato<-hiato/pib*100
+plot(hiato)
+hiato<-ts(hiato,frequency=12,start=c(2003,1),end=c(2023,12));hiato
+#fazendo o taylor
+taylor = cbind(selic, pib, eipca, hiato,cambio)
+
+#calculando o desvio (expectativo - meta da inlacao)
+desvio = eipca-meta
+desvio
+taylor = cbind(selic, desvio, hiato, cambio)
+plot(taylor)
+Dadosn <- as.data.frame(taylor)
+```
+
+```{r include=FALSE}
+#ARRUMANDO OS DADOS
+Dadosn <- as.data.frame(taylor)
+Dadosn$data <- seq(as.Date("2003-01-01"), by = "month", length.out = nrow(Dadosn))
+str(Dadosn)
+dif_dadoslog <- Dadosn
+dif_dadoslog <- left_join(Dadosn, sentimentos_final, by = "data")
+dif_dadoslog <- dif_dadoslog %>%
+  select(selic, desvio, hiato, cambio, pontuacao_total_sentimento, data, Titulo)
+
+# Exclua a coluna "MesAno"
+dif_dadoslog <- dif_dadoslog %>%
+  select(-MesAno)
+
+min_values <- apply(dif_dadoslog[,1:4], 2, min)
+
+# Somando cada coluna com o valor mínimo e garantindo que os valores sejam não negativos
+#dif_dadoslog$selic <- dif_dadoslog$selic - min_values[1] + 0.001
+dif_dadoslog$desvio <- dif_dadoslog$desvio - (min_values[2] - 0.001)
+dif_dadoslog$hiato <- dif_dadoslog$hiato - (min_values[3] - 0.001)
+#dif_dadoslog$pontuacao_total_sentimento <- dif_dadoslog$pontuacao_total_sentimento - (min_values[5] - 0.001)
+#dif_dadoslog$cambio <- dif_dadoslog$cambio - min_values[4] + 0.001
+dif_dadoslog$selic <- log(dif_dadoslog$selic)
+dif_dadoslog$desvio <- log(dif_dadoslog$desvio)
+dif_dadoslog$hiato <- log(dif_dadoslog$hiato)
+dif_dadoslog$cambio <- log(dif_dadoslog$cambio)
+#dif_dadoslog$pontuacao_total_sentimento <- log(dif_dadoslog$pontuacao_total_sentimento)
+
+
+dif_dados <- as.data.frame(lapply(dif_dadoslog[, 1:4], diff))
+
+dif_dados$data <- seq(as.Date("2003-02-01"), by = "month", length.out = nrow(dif_dados))
+dif_dados <- left_join(dif_dados, sentimentos_final, by = "data")
+```
+
+```{r include=FALSE}
+Nstart_date <- as.Date("2003-02-01") # Data inicial desejada
+Nend_date <- as.Date("2023-12-01") # Data final desejada
+#end_date <- ymd(c("2023-12-01", "2010-12-01", "2016-05-01", "2018-12-01", "2022-12-01"))
+#start_date <- ymd(c("2003-02-01","2003-02-01", "2011-01-01", "2016-05-01", "2019-01-01"))
+dependent_var <- "selic"
+independent_vars <- c("desvio","hiato","lag(selic,1)","lag(selic,2)","lag(pontuacao_total_sentimento,1)") # Adicione as variáveis independentes desejadas
+
+# Exiba o resultado
+
+```
+
+```{r eval=FALSE, include=FALSE}
+#Lag <- status::lag
+Taylorrr <- dynlm(dif_dados$selic ~ dif_dados$desvio + dif_dados$hiato + dif_dados$cambio)
+summary(Taylorrr)
+rodritest<-analisar_modelo(Taylorrr)
+```
+
+```{r include=FALSE}
+end_date <- ymd(c("2023-12-01", "2010-12-01", "2016-05-01", "2018-12-01", "2022-12-01"))
+start_date <- ymd(c("2003-02-01","2003-02-01", "2011-01-01", "2016-05-01", "2019-01-01"))
+con_exc = 47
+for (i in seq_along(start_date)) {
+  current_start <- start_date[i]
+  current_end <- end_date[i]
+  var_nomemodelo <- paste("modelo", current_start,"até", current_end, sep="_")
+  var_nomestats <- paste("medidas", current_start,"até", current_end, sep="_")
+  var_nomestats2 <- paste("extraido", current_start,"até", current_end, sep="_")
+  # Chame a função regressao_personalizada() com os valores de data atuais e o nome da variável do modelo
+  assign(var_nomemodelo, regressao_personalizada_dynlm(dif_dados, dependent_var, independent_vars, current_start, current_end))
+  summary(get(var_nomemodelo))
+  #arrumando os dados para depois escrever na tabela 
+  modelo_df <- extrair_resultados_regressao((get(var_nomemodelo)))
+  #exc_prontolm <- transformar_dataframe(modelo_df)
+  ##colnames(exc_prontolm) = NULL
+  #testes
+  assign(var_nomestats, analisar_modelo(get(var_nomemodelo)))
+  assign(var_nomestats2,extract_statistics(get(var_nomestats))) 
+  ##colnames(resultadostestes) = NULL
+  #escrevendo no sheets
+  #range_write(sheets, resultadostestes, sheet = 1, range = ®paste0("K", con_exc))
+  #range_write(sheets, exc_prontolm, sheet = 1, range = paste0("D", con_exc))
+  #con_exc = con_exc+3
+}
+```
+
+## Estimacao dos modelos
+
+### Modelo entre 2003 e 2023
+
+```{r}
+summary(`modelo_2003-02-01_até_2023-12-01`)
+analisar_modelo(`modelo_2003-02-01_até_2023-12-01`)
+```
+
+### Modelo entre 2003 e 2010
+
+```{r}
+summary(`modelo_2003-02-01_até_2010-12-01`)
+analisar_modelo(`modelo_2003-02-01_até_2010-12-01`)
+```
+
+### Modelo entre 2011 e 2016
+
+```{r}
+summary(`modelo_2011-01-01_até_2016-05-01`)
+analisar_modelo(`modelo_2011-01-01_até_2016-05-01`)
+```
+
+### Modelo entre 2016 e 2018
+
+```{r}
+summary(`modelo_2016-05-01_até_2018-12-01`)
+analisar_modelo(`modelo_2016-05-01_até_2018-12-01`)
+```
+
+### Modelo entre 2019 e 2022
+
+```{r}
+summary(`modelo_2019-01-01_até_2022-12-01`)
+analisar_modelo(`modelo_2019-01-01_até_2022-12-01`)
+```
+
+**MODELO VAR**
+
+Os dados ja foram deflacionados
+
+```{r}
+library(fBasics)
+library(rbcb)
+library(deflateBR)
+library(vars)
+```
+
+Calculano com os dados brutos
+
+```{r}
+dif_dados <- dif_dados %>%
+  select(-data, -Titulo, -MesAno)
+Dadosn <- left_join(Dadosn, sentimentos_final, by = "data")
+Dadosn <- Dadosn %>%
+  select(-data, -Titulo, -MesAno)
+dev.new(width = 800, height = 600)
+
+VARselect(Dadosn, lag.max =12)
+{
+  VAR1 = VAR(Dadosn, p=5, type = "none")
+  summary(VAR1)
+  #plot(VAR1)
+  
+  VAR1c = VAR(Dadosn, p = 2, type = "const")
+  summary(VAR1c)
+  #plot(VAR1c)
+  
+  VAR1t = VAR(Dadosn, p=2, type = 'trend')
+  summary(VAR1t)
+ #plot(VAR1t)
+}
+plot(irf(VAR1, n.ahead = 24, impulse = "pontuacao_total_sentimento", response = "selic", boot = T))
+
+```
+
+calculando com diff nos dados (sentimento ainda ta bruto)
+
+```{r}
+VARselect(dif_dados, lag.max =12)
+{
+  VAR1 = VAR(dif_dados, p=1, type = "none")
+  summary(VAR1)
+  #plot(VAR1)
+  
+  VAR1c = VAR(dif_dados, p = 2, type = "const")
+  summary(VAR1c)
+  #plot(VAR1c)
+  
+  VAR1t = VAR(dif_dados, p=4, type = 'trend')
+  summary(VAR1t)
+ #plot(VAR1t)
+}
+plot(irf(VAR1, n.ahead = 24, impulse = "pontuacao_total_sentimento", response = "selic", boot = T))
+```
+
+## Conclusoes
+
+No modelo de Mínimos Quadrados Ordinários (MQO), ao analisar o valor do T, observa-se uma relevância no índice de sentimento criado dentro do modelo de Taylor, principalmente entre os períodos de 2011 e 2018. No entanto, esse índice foi menos relevante no período de 2018 a 2022. Essa diminuição pode ser atribuída aos efeitos do COVID-19, que tornaram os dados mais erráticos.
+
+No modelo Vetor Auto-Regressivo (VAR), a resposta do índice de sentimento afeta a taxa Selic e estabiliza-se acima do ponto inicial. No entanto, não retorna completamente ao ponto de partida.
+
+Para melhorar a eficácia do índice de sentimento, é necessário revisá-lo. Uma abordagem seria testar diferentes dicionários para medir o sentimento ou até mesmo modificar a metodologia. Além disso, considerar a utilização de um modelo que pondera as palavras e atribui um “peso” à importância de cada termo pode ser mais eficaz na tradução do sentimento das atas do Copom..
+
+## Referencias
+
+**BARBOSA**, R. B. Impactos da incerteza macroeconômica sobre a situação fiscal no Brasil. [s. l.],
+
+BERNANKE, B. S. Irreversibility, Uncertainty, and Cyclical Investment. **The Quarterly Journal of Economics**, [s. l.], v. 98, n. 1, p. 85, 1983.
+
+KNIGHT, F. H. **Risk, uncertainty and profit**. Mineola, NY: Dover Publications, 2006.
+
+SANTANA, Caio Vinicius Santos et al. Investor sentiment and earnings management in Brazil. **Revista Contabilidade & Finanças**, [s. l.], v. 31, n. 83, p. 283–301, 2020. 
+
+SILVA, P. H. N.; BESARRIA, C. D. N.; SILVA, M. D. D. O. P. D. Mensurando e avaliando os efeitos de um choque de incerteza da política econômica sobre a economia brasileira. **Economia Aplicada**, [s. l.], v. 26, n. 3, p. 335–374, 2022.
+
+VALCAREGGI, S. M. **Análise de sentimentos para o mercado brasileiro**. 2022. Mestrado em Economia Aplicada - Universidade de São Paulo, Ribeirão Preto, 2022. 
+
+Disponível em:<https://www.teses.usp.br/teses/disponiveis/96/96131/tde-24012023-165235/>.
